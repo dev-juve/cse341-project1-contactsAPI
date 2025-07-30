@@ -24,20 +24,9 @@ const ObjectId = require('mongodb').ObjectId;
  */
 router.get('/', async (req, res) => {
   try {
-    const result = await mongodb.getDb().db().collection('contacts').find();
-    result.toArray().then((lists) => {
-      res.status(200).json(lists);
-    });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to get contacts' });
-  }
-});
-// GET all contacts
-router.get('/', async (req, res) => {
-  try {
     const result = await mongodb.getDb().collection('contacts').find();
-    result.toArray().then((lists) => {
-      res.status(200).json(lists);
+    result.toArray().then((contacts) => {
+      res.status(200).json(contacts);
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to get contacts' });
@@ -65,16 +54,15 @@ router.get('/', async (req, res) => {
  *       500:
  *         description: Invalid contact ID
  */
-// GET contact by ID
 router.get('/:id', async (req, res) => {
   try {
     const contactId = new ObjectId(req.params.id);
     const result = await mongodb.getDb().collection('contacts').find({ _id: contactId });
-    result.toArray().then((lists) => {
-      if (lists.length === 0) {
+    result.toArray().then((contacts) => {
+      if (contacts.length === 0) {
         res.status(404).json({ error: 'Contact not found' });
       } else {
-        res.status(200).json(lists[0]);
+        res.status(200).json(contacts[0]);
       }
     });
   } catch (err) {
@@ -98,6 +86,8 @@ router.get('/:id', async (req, res) => {
  *               - firstName
  *               - lastName
  *               - email
+ *               - favoriteColor
+ *               - birthday
  *             properties:
  *               firstName:
  *                 type: string
@@ -113,10 +103,11 @@ router.get('/:id', async (req, res) => {
  *     responses:
  *       201:
  *         description: Contact created
+ *       400:
+ *         description: Missing required fields
  *       500:
  *         description: Failed to create contact
  */
-// POST new contact
 router.post('/', async (req, res) => {
   const { firstName, lastName, email, favoriteColor, birthday } = req.body;
 
@@ -124,13 +115,7 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'All fields are required.' });
   }
 
-  const newContact = {
-    firstName,
-    lastName,
-    email,
-    favoriteColor,
-    birthday
-  };
+  const newContact = { firstName, lastName, email, favoriteColor, birthday };
 
   try {
     const result = await mongodb.getDb().collection('contacts').insertOne(newContact);
@@ -172,12 +157,13 @@ router.post('/', async (req, res) => {
  *                 type: string
  *                 format: date
  *     responses:
- *       204:
+ *       200:
  *         description: Contact updated
+ *       404:
+ *         description: Contact not found or unchanged
  *       500:
  *         description: Failed to update contact
  */
-// PUT update contact by ID
 router.put('/:id', async (req, res) => {
   try {
     const contactId = new ObjectId(req.params.id);
@@ -186,13 +172,10 @@ router.put('/:id', async (req, res) => {
       lastName: req.body.lastName,
       email: req.body.email,
       favoriteColor: req.body.favoriteColor,
-      birthday: req.body.birthday
+      birthday: req.body.birthday,
     };
 
-    const result = await mongodb
-      .getDb()
-      .collection('contacts')
-      .replaceOne({ _id: contactId }, contactData);
+    const result = await mongodb.getDb().collection('contacts').replaceOne({ _id: contactId }, contactData);
 
     if (result.modifiedCount === 0) {
       return res.status(404).json({ error: 'Contact not found or data unchanged' });
@@ -220,17 +203,15 @@ router.put('/:id', async (req, res) => {
  *     responses:
  *       200:
  *         description: Contact deleted
+ *       404:
+ *         description: Contact not found
  *       500:
  *         description: Failed to delete contact
  */
-// DELETE contact by ID
 router.delete('/:id', async (req, res) => {
   try {
     const contactId = new ObjectId(req.params.id);
-    const result = await mongodb
-      .getDb()
-      .collection('contacts')
-      .deleteOne({ _id: contactId });
+    const result = await mongodb.getDb().collection('contacts').deleteOne({ _id: contactId });
 
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: 'Contact not found' });
@@ -241,7 +222,5 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete contact' });
   }
 });
-
-
 
 module.exports = router;
