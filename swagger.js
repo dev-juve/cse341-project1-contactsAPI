@@ -13,7 +13,7 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:8080',
+        url: 'https://cse341-project1-contactsapi.onrender.com',
       },
     ],
   },
